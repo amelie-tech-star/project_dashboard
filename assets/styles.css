@@ -1,0 +1,23 @@
+.custom-card {
+    white-space : pre-line;
+    height : 25vh;
+    font-size : 20px;
+    overflow-y : auto;
+}
+.custom-figure{
+  background-color : rgba(0,0,0,0);
+}
+/*
+h1, h2, h3, h4, h5, h6 {
+    color: indigo
+    font-family: sans-serif;
+}
+p {
+    font-family: 'Poppins';
+    color: #ffffff;
+    margin-left: 30px;
+    margin-top: 30px;
+    whiteSpace: pre-line;
+    background-color:'lavender'
+    fontSize: 14
+} */
