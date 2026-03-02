@@ -14,9 +14,9 @@ from model import management_files
 import numpy as np
 
 
-date = '0000-00-00'
-project_list = ['1-10-TMP-0000']
-project_dir = 'C:\\Users\\a.guion\\Documents\\Perso\\Templates\\ProjectManagement\\'
+date = '2026-02-28'
+project_list = ['25-0030 - FLYCERA']
+project_dir = '\\\\dfs\\AIX\\KNS\\Doc_KN\\XXX affaires\\2025\\'
 
 #date = '2025-12-31'
 #project_list = ['1-10-MIN-2210', '1-10-MIN-2108',  '1-10-MIN-2312']
@@ -25,7 +25,7 @@ project_dir = 'C:\\Users\\a.guion\\Documents\\Perso\\Templates\\ProjectManagemen
 col_list = ['Actual Cost', 'Earned Value', 'Reste à Faire', 'Planned Value']
 col_list_short = ['AC', 'EV', 'RAF', 'PV']
 color_list = { 'AC' : 'orchid', 'RAF': 'gray', 'EV':'gold', 'PV' : 'lime', 'CAT' : 'blue', 'Objectif CAT' : 'cyan' }
-cat_titles = ['MANAGEMENT', 'SYSTÈME', 'HARDWARE', 'FIRMWARE', 'SOFTWARE', 'BE/CAO', 'Fabrication', 'Achats', 'VSR', 'RESERVE', 'TOTAL']
+cat_titles = ['MANAGEMENT', 'SYSTÈME', 'HARDWARE', 'FIRMWARE', 'SOFTWARE', 'MECANIQUE', 'CAO', 'Fabrication', 'Achats', 'Garantie/Risk', 'TOTAL']
 synthesis_avancement = ['réunion', 'TOP POINTS DURS', 'période passée', 'période à venir']
 synthesis_chiffres = ['CA', 'CAT INIT', 'PM INIT', 'CAT NEW', 'PM NEW']
 template="plotly_dark"
