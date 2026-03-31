@@ -2,69 +2,68 @@ import os
 import re
 import pandas as pd
 
+pattern_ref = '[0-9][0-9]-[0-9][0-9][0-9][0-9].A[0-9][0-9][0-9].[0-9][0-9][0-9].[A-Z][0-9]'
+dir_pilotage = '\\__ A2-GESTION DE PROJET\\A227-229 Suivi Projet\\'
+
+def get_FILE_loc(project_dir, project, file_dir, identifiant, extension, date):
+    pattern_file = pattern_ref + "_" + identifiant + "_" + date + extension
+    project_dir_current = project_dir + project + dir_pilotage + file_dir
+    try:
+        for root, dirs, files in os.walk(project_dir_current):
+            for file_resource in files:
+                if re.search(pattern_file, file_resource):
+                    raise Exception()
+    except Exception:
+        print(file_resource)
+
+    print(f"{identifiant}  = {file_resource}")
+
+    return project_dir_current + file_resource
+
 def get_FILE_dataframe(project_list, date, project_dir ):
 
     FILE_dataframe = pd.DataFrame()
     
-    pattern_ref = '[0-9][0-9]-[0-9][0-9][0-9][0-9].A[0-9][0-9][0-9].[0-9][0-9][0-9].[A-Z][0-9]'
-    dir_pilotage = '\\__ A2-GESTION DE PROJET\\A227-229 Suivi Projet\\'
-    
     for project in project_list:
+
+        #############
+        # TBD       #
+        #############
+        FILE_dataframe.loc[project, 'TBD'] = get_FILE_loc(project_dir, project, "4_Integration\\", "GP", ".xlsm", date)
+
+        ################
+        # WBS          #
+        ################
+        FILE_dataframe.loc[project, 'Scope'] = get_FILE_loc(project_dir, project, "5_Scope\\", "WBS", ".vsdx", date)
 
         #############
         # SCHEDULE  #
         #############
-        pattern_sched = pattern_ref + '_Schedule_'+ date + '.mpp'
-        project_dir_sched = project_dir + project + dir_pilotage + '6_Schedule\\'
-        print (project_dir_sched)
-        try:
-            for root, dirs, files in os.walk(project_dir_sched):
-                for file_sched in files:
-                    if re.search(pattern_sched, file_sched):
-                       raise Exception()
-        except Exception:
-            print(file_sched)
-
-        print(f"SCHEDULE  = {file_sched}")
-        FILE_dataframe.loc[project, 'Schedule'] = project_dir_sched + file_sched
+        FILE_dataframe.loc[project, 'Schedule'] = get_FILE_loc(project_dir, project, "6_Schedule\\", "Shedule", ".mpp", date)
 
         #############
         # FORECAST  #
         #############
-        
-        FILE_dataframe.loc[project, 'Forecast'] = project_dir + project + dir_pilotage + '..\\' + project + '.xlsx'
-        print(f"FORECAST  = {FILE_dataframe.loc[project, 'Forecast']}")
+        FILE_dataframe.loc[project, 'Forecast'] = get_FILE_loc(project_dir, project, dir_pilotage + "..\\", project, ".xlsx", date)
 
-        ########
-        # EVM  #
-        ########
-        pattern_cost = pattern_ref + '_Cost_'+ date + '.xlsm'
-        project_dir_cost = project_dir + project + dir_pilotage + '7_Cost\\'
-        try:
-            for root, dirs, files_cost in os.walk(project_dir_cost):
-                for file_cost in files_cost:
-                    if re.search(pattern_cost, file_cost):
-                       raise Exception()
-        except Exception:
-            print(file_cost)
+        #############
+        # EVM       #
+        #############
+        FILE_dataframe.loc[project, 'Cost'] = get_FILE_loc(project_dir, project, "7_Cost\\", "Cost", ".xlsm", date)
 
-        print(f"COST  = {file_cost}")
-        FILE_dataframe.loc[project, 'Cost'] = project_dir_cost + file_cost
+        #############
+        # RESOURCES #
+        #############
+        FILE_dataframe.loc[project, 'Resource'] = get_FILE_loc(project_dir, project, "9_Resource\\", "OBS", ".vsdx", date)
 
-        ########
-        # TBD  #
-        ########
-        pattern_int = pattern_ref + '_TBD_'+ date + '.xlsm'
-        project_dir_int = project_dir + project + dir_pilotage + '4_Integration\\'
-        try:
-            for root, dirs, files_int in os.walk(project_dir_int):
-                for file_int in files_int:
-                    if re.search(pattern_int, file_int):
-                       raise Exception()
-        except Exception:
-            print(file_int)
-        
-        print(f"TBD  = {file_int}")
-        FILE_dataframe.loc[project, 'TBD'] = project_dir_int + file_int
+        ################
+        # PROCUREMENT  #
+        ################
+        FILE_dataframe.loc[project, 'Procurement'] = get_FILE_loc(project_dir, project, "12_Procurement\\", "Procurement", ".vsdx", date)
+
+        ################
+        # STAKEHOLDERS #
+        ################
+        FILE_dataframe.loc[project, 'Stakeholders'] = get_FILE_loc(project_dir, project, "13_Stakeholders\\", "Stakeholders", ".vsdx", date)
 
     return FILE_dataframe

@@ -6,12 +6,13 @@ import os
 from pathlib import Path
 
 FILE_dataframe = pd.DataFrame()
-project_list = ['1-10-MIN-2108','1-10-MIN-2210', '1-10-MIN-2312']
-#project_list = ['1-10-MIN-2108']
-project_dir = '\\\\srv-filer01.global.ad\\AFFAIRES_TELECOM\\'
-date = '2025-11-30'
-new_date = '2025-12-31'
-file_list = ["Schedule", "Cost", "TBD"]
+project_list = ['25-0030 - FLYCERA']
+project_dir = '\\\\dfs\\AIX\\KNS\\Doc_KN\\XXX affaires\\2025\\'
+pattern_ref = '[0-9][0-9]-[0-9][0-9][0-9][0-9].A[0-9][0-9][0-9].[0-9][0-9][0-9]'
+dir_pilotage = '\\__ A2-GESTION DE PROJET\\A227-229 Suivi Projet\\'
+date = '2026-03-31'
+new_date = '2026-04-30'
+file_list = ["TBD", "Scope", "Schedule", "Cost", "Forecast", "Resource", "Procurement", "Stakeholders"]
 old_file = {}
 new_file = {}
 
@@ -39,7 +40,7 @@ for project in project_list:
     #print(old_forecast_name)
     #print(old_forecast_name.parent)
     # Ajouter la date juste avant l'extension
-    new_forecast_name = old_forecast_name.parent /Path(*["7_COST-NP", "_ZBA"]) / "{0}_{1}{2}".format(old_forecast_name.stem, date, old_forecast_name.suffix)
+    new_forecast_name = old_forecast_name.parent /Path(*["7_COST", "_ZBA"]) / "{0}_{1}{2}".format(old_forecast_name.stem, date, old_forecast_name.suffix)
 
     print("New forecast {0}".format(new_forecast_name))
     # Déplacer le nouveau fichier dans _ZBA
