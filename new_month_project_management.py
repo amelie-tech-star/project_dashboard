@@ -12,7 +12,7 @@ pattern_ref = '[0-9][0-9]-[0-9][0-9][0-9][0-9].A[0-9][0-9][0-9].[0-9][0-9][0-9]'
 dir_pilotage = '\\__ A2-GESTION DE PROJET\\A227-229 Suivi Projet\\'
 date = '2026-03-31'
 new_date = '2026-04-30'
-file_list = ["GP", "Scope", "Schedule", "Cost", "Forecast", "Resource", "Procurement", "Stakeholders"]
+file_list = ["TBD", "Scope", "Schedule", "Cost", "Forecast", "Resource", "Procurement", "Stakeholders"]
 old_file = {}
 new_file = {}
 
@@ -40,9 +40,10 @@ for project in project_list:
     #print(old_forecast_name)
     #print(old_forecast_name.parent)
     # Ajouter la date juste avant l'extension
-    new_forecast_name = old_forecast_name.parent /Path(*["7_COST", "_ZBA"]) / "{0}_{1}{2}".format(old_forecast_name.stem, date, old_forecast_name.suffix)
+    new_forecast_name = old_forecast_name.parent /Path(*["..", "A229-Suivi Projet", "7_Cost", "_CEGID"]) / "{0}_{1}{2}".format(old_forecast_name.stem, date, old_forecast_name.suffix)
 
     print("New forecast {0}".format(new_forecast_name))
     # Déplacer le nouveau fichier dans _ZBA
     if not Path(new_forecast_name).exists():
         shutil.copy2(Path(old_forecast_name), Path(new_forecast_name))
+
