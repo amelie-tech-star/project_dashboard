@@ -14,22 +14,22 @@ from model import management_files
 import numpy as np
 
 
-date = '2026-02-28'
+date = '2026-03-31'
 project_list = ['25-0030 - FLYCERA']
 project_dir = '\\\\dfs\\AIX\\KNS\\Doc_KN\\XXX affaires\\2025\\'
 
 col_list = ['Actual Cost', 'Earned Value', 'Reste à Faire', 'Planned Value']
 col_list_short = ['AC', 'EV', 'RAF', 'PV']
 color_list = { 'AC' : 'orchid', 'RAF': 'gray', 'EV':'gold', 'PV' : 'lime', 'CAT' : 'blue', 'Objectif CAT' : 'cyan' }
-cat_titles = ['MANAGEMENT', 'SYSTÈME', 'HARDWARE', 'FIRMWARE', 'SOFTWARE', 'MECANIQUE', 'CAO', 'Fabrication', 'Achats', 'Garantie/Risk', 'TOTAL']
-synthesis_avancement = ['réunion', 'TOP POINTS DURS', 'période passée', 'période à venir']
-synthesis_chiffres = ['CA', 'CAT INIT', 'PM INIT', 'CAT NEW', 'PM NEW']
+cat_titles = ['MANAGEMENT', 'SYSTEM', 'HARDWARE', 'FIRMWARE', 'SOFTWARE', 'MECHANICAL', 'CAO', 'Manufacturing', 'Procurement', 'Warranty/Risk', 'TOTAL']
+actuality = ['meeting', 'Main issues', 'Past activities', 'Future activities']
+baseline_chiffres = ['CA', 'CAT', 'PM', 'CAT NEW', 'PM NEW']
 template="plotly_dark"
 
-EVM_collection = {}
 PERF_collection = {}
 cat_list = {}
 TBD_avancement = pd.DataFrame()
+BASELINE_dataframe = pd.DataFrame()
 FILE_dataframe = pd.DataFrame()
 
 FILE_dataframe= management_files.get_FILE_dataframe(project_list, date, project_dir)
@@ -44,8 +44,7 @@ for project in project_list:
     PERF = PERF[PERF['Nom du poste'] == 'x']
     # Get "Categories" column and use it as index (Projet, Système, HW, FW...)
     cat_list[project] = PERF['Catégorie'].values
-    cat_list[project] = [w.replace('Ingénieur - ', '') for w in cat_list[project]]
-
+    
     PERF.index=cat_list[project]
     # Transpose the dataframe
     PERF = PERF.transpose()
@@ -66,26 +65,41 @@ for project in project_list:
         PERF_collection[project,cat]=pd.DataFrame(result, columns = col_list_short)
 
 
+
+    ########################
+    # BASELINE PARSING     #
+    ########################
+    BASELINE = pd.read_excel (FILE_dataframe.loc[project, 'Cost'], 'BASELINE', header=None)
+    synth_chif_found= False
+    
+    # For each colomn
+    for col_name, col_data in BASELINE.items():
+        # For each value in the column
+        for idx, value in col_data.items():
+            for baseline_name in baseline_chiffres:
+                # if baseline_name is found
+                if baseline_name == str(value):
+                    synth_chif_found= True
+                    synth_chif_found_value = str(value)
+                    synth_chif_found_j = idx
+                    break
+
+            if synth_chif_found == True and synth_chif_found_j !=  idx:
+                synth_chif_found= False
+                print (f"{synth_chif_found_value} = {value}")
+                BASELINE_dataframe.loc[project,synth_chif_found_value] = value
+
+
     ########################
     # TBD SHEET PARSING    #
     ########################
-    TbD = pd.read_excel (FILE_dataframe.loc[project, 'TBD'], 'Synthesis', header=None)
+    TbD = pd.read_excel (FILE_dataframe.loc[project, 'TBD'], 'Actuality', header=None)
     synth_chif_found= False
     for i, row in TbD.iterrows():
         for j, value in row.items():
-            for synth_avcmt in synthesis_avancement:
+            for synth_avcmt in actuality:
                 if synth_avcmt in str(value):
                     TBD_avancement.loc[project, synth_avcmt]=value
-            for synth_chif in synthesis_chiffres:
-                if synth_chif == str(value):
-                    synth_chif_found= True
-                    synth_chif_found_value = synth_chif
-                    synth_chif_found_j = j
-                    break
-
-            if synth_chif_found == True and synth_chif_found_j !=  j:
-                synth_chif_found= False
-                TBD_avancement.loc[project,synth_chif_found_value]=value
 
 #######################
 # PERF AND EVM FIGURE #
@@ -146,7 +160,7 @@ for j in range (0, 11):
     if j == 10:
         perf_x = perf_df[perf_df.columns[0]].index
         perf_y = np.empty(len(perf_x))
-        perf_y.fill(TBD_avancement.loc[project_list[0],'CAT INIT'])
+        perf_y.fill(BASELINE_dataframe.loc[project_list[0],'CAT'])
         fig.add_trace(
            go.Scatter(
                x=perf_x,
@@ -166,22 +180,22 @@ evm_fig.update_yaxes()
 evm_fig.update_xaxes()
 
 
-##############
-# TBD FIGURE #
-##############
+####################
+# BASELINE FIGURE #
+####################
 tbd_fig = go.Figure()
 tbd_fig.add_trace(
     go.Indicator(
         mode = "gauge+number+delta",
-        value = TBD_avancement.loc[project_list[0],'CAT INIT'],
-        title = {'text': "CAT & DELTA CAT<br><span style='font-size:0.8em;color:gray'> CA : " +str(TBD_avancement.loc[project_list[0],'CA']/1000) + "kEUR</span>"},
-        delta = {'reference': TBD_avancement.loc[project_list[0],'CAT NEW'], },
+        value = BASELINE_dataframe.loc[project_list[0],'CAT'],
+        title = {'text': "CAT & DELTA CAT<br><span style='font-size:0.8em;color:gray'> CA : " +str(BASELINE_dataframe.loc[project_list[0],'CA']/1000) + "kEUR</span>"},
+        delta = {'reference': BASELINE_dataframe.loc[project_list[0],'CAT NEW'], },
         gauge = {
             'bar': {'color': color_list['RAF']},
             'steps': [
-                {'range': [0, TBD_avancement.loc[project_list[0],'CAT INIT']], 'color': color_list['Objectif CAT']},
-                {'range': [TBD_avancement.loc[project_list[0],'CAT INIT'], TBD_avancement.loc[project_list[0],'CAT NEW']],'color': color_list['CAT']},
-                {'range': [TBD_avancement.loc[project_list[0],'CAT NEW'], TBD_avancement.loc[project_list[0],'CA']],'color': color_list['AC']}],
+                {'range': [0, BASELINE_dataframe.loc[project_list[0],'CAT']], 'color': color_list['Objectif CAT']},
+                {'range': [BASELINE_dataframe.loc[project_list[0],'CAT'], BASELINE_dataframe.loc[project_list[0],'CAT NEW']],'color': color_list['CAT']},
+                {'range': [BASELINE_dataframe.loc[project_list[0],'CAT NEW'], BASELINE_dataframe.loc[project_list[0],'CA']],'color': color_list['AC']}],
             }
         )
     )
@@ -191,10 +205,10 @@ tbd_ind_fig = go.Figure()
 tbd_ind_fig.add_trace(
     go.Indicator(
         mode = "number+delta",
-        value = TBD_avancement.loc[project_list[0],'PM NEW'],
+        value = BASELINE_dataframe.loc[project_list[0],'PM NEW'],
         number = {'valueformat':'.2%'},
         title = {'text': u'PM & ΔPM %'},
-        delta = {'reference': TBD_avancement.loc[project_list[0],'PM INIT'],
+        delta = {'reference': BASELINE_dataframe.loc[project_list[0],'PM'],
         'valueformat':'.2%',},
         domain = {'row': 0, 'column': 0},
         name = 'pm_percent',
@@ -204,9 +218,9 @@ tbd_ind_fig.add_trace(
 tbd_ind_fig.add_trace(
     go.Indicator(
         mode = "number+delta",
-        value = TBD_avancement.loc[project_list[0],'CA']-TBD_avancement.loc[project_list[0],'CAT NEW'],
+        value = BASELINE_dataframe.loc[project_list[0],'CA']-BASELINE_dataframe.loc[project_list[0],'CAT NEW'],
         title = {'text': u'PM & ΔPM'},
-        delta = {'reference': TBD_avancement.loc[project_list[0],'CA']-TBD_avancement.loc[project_list[0],'CAT INIT'],},
+        delta = {'reference': BASELINE_dataframe.loc[project_list[0],'CA']-BASELINE_dataframe.loc[project_list[0],'CAT'],},
         domain = {'row': 1, 'column': 0},
         name = 'pm_value',
         )
@@ -217,18 +231,18 @@ tbd_ind_fig.update_layout(template=template, grid = {'rows': 2, 'columns': 1, 'p
 # TBD CALLBACK  #
 #################
 @callback([
-    Output(component_id=synthesis_avancement[0], component_property='children'),
-    Output(component_id=synthesis_avancement[1], component_property='children'),
-    Output(component_id=synthesis_avancement[2], component_property='children'),
-    Output(component_id=synthesis_avancement[3], component_property='children'),
+    Output(component_id=actuality[0], component_property='children'),
+    Output(component_id=actuality[1], component_property='children'),
+    Output(component_id=actuality[2], component_property='children'),
+    Output(component_id=actuality[3], component_property='children'),
     ],
     Input(component_id='project-item', component_property='value')
 )
 def update_synthesis(project_chosen):
-    children_0 = TBD_avancement.loc[project_chosen, synthesis_avancement[0]]
-    children_1 = TBD_avancement.loc[project_chosen, synthesis_avancement[1]]
-    children_2 = TBD_avancement.loc[project_chosen, synthesis_avancement[2]]
-    children_3 = TBD_avancement.loc[project_chosen, synthesis_avancement[3]]
+    children_0 = TBD_avancement.loc[project_chosen, actuality[0]]
+    children_1 = TBD_avancement.loc[project_chosen, actuality[1]]
+    children_2 = TBD_avancement.loc[project_chosen, actuality[2]]
+    children_3 = TBD_avancement.loc[project_chosen, actuality[3]]
     return children_0,children_1,children_2, children_3
 
 @callback(
@@ -237,14 +251,14 @@ def update_synthesis(project_chosen):
 )
 def update_tbd_gauge(project_chosen):
     tbd_fig.update_traces(
-        value = TBD_avancement.loc[project_chosen,'CAT INIT'],
-        title = {'text': "CAT & DELTA CAT<br><span style='font-size:0.8em;color:gray'> CA : " +str(TBD_avancement.loc[project_chosen,'CA']/1000) + "kEUR</span>"},
-        delta = {'reference': TBD_avancement.loc[project_chosen,'CAT NEW']},
+        value = BASELINE_dataframe.loc[project_chosen,'CAT'],
+        title = {'text': "CAT & DELTA CAT<br><span style='font-size:0.8em;color:gray'> CA : " +str(BASELINE_dataframe.loc[project_chosen,'CA']/1000) + "kEUR</span>"},
+        delta = {'reference': BASELINE_dataframe.loc[project_chosen,'CAT NEW']},
         gauge = {
              'steps': [
-                {'range': [0, TBD_avancement.loc[project_chosen,'CAT INIT']]},
-                {'range': [TBD_avancement.loc[project_chosen,'CAT INIT'], TBD_avancement.loc[project_chosen,'CAT NEW']]},
-                {'range': [TBD_avancement.loc[project_chosen,'CAT NEW'], TBD_avancement.loc[project_chosen,'CA']] }
+                {'range': [0, BASELINE_dataframe.loc[project_chosen,'CAT']]},
+                {'range': [BASELINE_dataframe.loc[project_chosen,'CAT'], BASELINE_dataframe.loc[project_chosen,'CAT NEW']]},
+                {'range': [BASELINE_dataframe.loc[project_chosen,'CAT NEW'], BASELINE_dataframe.loc[project_chosen,'CA']] }
                 ],
          }
         )
@@ -256,13 +270,13 @@ def update_tbd_gauge(project_chosen):
 )
 def update_ind_tbd(project_chosen):
     tbd_ind_fig.update_traces(
-        value = TBD_avancement.loc[project_chosen,'PM NEW'],
-        delta = {'reference': TBD_avancement.loc[project_chosen,'PM INIT']},
+        value = BASELINE_dataframe.loc[project_chosen,'PM NEW'],
+        delta = {'reference': BASELINE_dataframe.loc[project_chosen,'PM']},
         selector=dict(name='pm_percent'),
         )
     tbd_ind_fig.update_traces(
-        value = TBD_avancement.loc[project_chosen,'CA']-TBD_avancement.loc[project_chosen,'CAT NEW'],
-        delta = {'reference': TBD_avancement.loc[project_chosen,'CA']-TBD_avancement.loc[project_chosen,'CAT INIT']},
+        value = BASELINE_dataframe.loc[project_chosen,'CA']-BASELINE_dataframe.loc[project_chosen,'CAT NEW'],
+        delta = {'reference': BASELINE_dataframe.loc[project_chosen,'CA']-BASELINE_dataframe.loc[project_chosen,'CAT']},
         selector=dict(name='pm_value'),
         )
     return tbd_ind_fig
@@ -289,7 +303,6 @@ def open_file_tbd(n_clicks, value):
     if n_clicks:
         print(value)
         print(n_clicks)
-        #os.startfile(FILE_dataframe.loc[value, 'TBD'])
         os.startfile(value)
     return ""
 
@@ -301,7 +314,6 @@ def open_file_cost(n_clicks, value):
     if n_clicks:
         print(value)
         print(n_clicks)
-        #os.startfile(FILE_dataframe.loc[value, 'Cost'])
         os.startfile(value)
     return ""
 
@@ -314,7 +326,6 @@ def open_file_schedule(n_clicks, value):
         print(value)
         print(n_clicks)
         os.startfile(value)
-        #os.startfile(FILE_dataframe.loc[value, 'Schedule'])
     return ""
 
 @callback(
@@ -326,7 +337,6 @@ def open_file_forecast(n_clicks, value):
         print(value)
         print(n_clicks)
         os.startfile(value)
-        #os.startfile(FILE_dataframe.loc[value, 'Forecast'])
     return ""
 
 #################
@@ -346,9 +356,9 @@ def update_evm(project_chosen):
             y=perf_proj_collection[col],
             selector=dict(name=cat_titles[10] + ' ' + col))
 
-    # Update separatly CAT INIT that is coming from TBD
+    # Update separatly CAT that is coming from BASELINE
     perf_y = np.empty(len(perf_x))
-    perf_y.fill(TBD_avancement.loc[project_chosen,'CAT INIT'])
+    perf_y.fill(BASELINE_dataframe.loc[project_chosen,'CAT'])
     evm_fig.update_traces(
         x=perf_proj_collection.index,
         y=perf_y,
@@ -393,10 +403,10 @@ app.layout = dbc.Container([dbc.Row([
         # DROPDOWN
         dbc.Row(dcc.Dropdown(options=project_list, value=project_list[0], id='project-item')),
         # LINKS
-        dbc.Row(dbc.Button("Tableau de bord", value=FILE_dataframe.loc[project, 'TBD'], id = 'Link_TBD')),
-        dbc.Row(dbc.Button("Coûts", value=FILE_dataframe.loc[project, 'Cost'], id = 'Link_Cost')),
+        dbc.Row(dbc.Button("Dashboard", value=FILE_dataframe.loc[project, 'TBD'], id = 'Link_TBD')),
+        dbc.Row(dbc.Button("Costs", value=FILE_dataframe.loc[project, 'Cost'], id = 'Link_Cost')),
         dbc.Row(dbc.Button("Forecast", value=FILE_dataframe.loc[project, 'Forecast'], id = 'Link_Forecast')),
-        dbc.Row(dbc.Button("Echéancier", value=FILE_dataframe.loc[project, 'Schedule'], id = 'Link_Schedule')),
+        dbc.Row(dbc.Button("Schedule", value=FILE_dataframe.loc[project, 'Schedule'], id = 'Link_Schedule')),
         html.Div(id='Open_TBD', style={'display':'none'}),
         html.Div(id='Open_Cost', style={'display':'none'}),
         html.Div(id='Open_Forecast', style={'display':'none'}),
@@ -409,15 +419,15 @@ app.layout = dbc.Container([dbc.Row([
                 # INDICATOR
                 dbc.Row( dcc.Graph(figure=tbd_ind_fig, id='TBD_INDICATOR', style={'height':'25vh','border': '1px solid'}), ),
                 # REUNION
-                dbc.Row(dbc.Card(html.P(TBD_avancement.loc[project,synthesis_avancement[0]], id=synthesis_avancement[0]), className='custom-card'),),
+                dbc.Row(dbc.Card(html.P(TBD_avancement.loc[project,actuality[0]], id=actuality[0]), className='custom-card'),),
                 ],width=2),
             # EVM GRAPH
             dbc.Col(dbc.Row(dcc.Graph(figure=evm_fig, id='EVM',style={ 'height':'50vh'})),
                 width=6, style={'border': '1px solid'} ),
 
             dbc.Col( [
-                 # POINTS DURS
-                 dbc.Row(dbc.Card(html.P(TBD_avancement.loc[project,synthesis_avancement[1]], id=synthesis_avancement[1]), style={'color': 'red'}, className='custom-card')),
+                 # MAIN ISSUES
+                 dbc.Row(dbc.Card(html.P(TBD_avancement.loc[project,actuality[1]], id=actuality[1]), style={'color': 'red'}, className='custom-card')),
                  # GAUGE
                  dbc.Row(dcc.Graph(figure=tbd_fig, id='TBD_GAUGE',style={'border': '1px solid', 'height':'25vh'})),
                  ], width=4 ),
@@ -428,8 +438,8 @@ app.layout = dbc.Container([dbc.Row([
                 width=8, style={'border': '1px solid'} ),
             #AVANCEMENT
             dbc.Col(dbc.Row([
-                dbc.Card(html.P(children=TBD_avancement.loc[project,synthesis_avancement[2]], id=synthesis_avancement[2]), style={'color': color_list['EV']}, className='custom-card'),
-                dbc.Card(html.P(children=TBD_avancement.loc[project,synthesis_avancement[3]], id=synthesis_avancement[3]), style={'color': color_list['PV']}, className='custom-card'),
+                dbc.Card(html.P(children=TBD_avancement.loc[project,actuality[2]], id=actuality[2]), style={'color': color_list['EV']}, className='custom-card'),
+                dbc.Card(html.P(children=TBD_avancement.loc[project,actuality[3]], id=actuality[3]), style={'color': color_list['PV']}, className='custom-card'),
                 ]), width=4),
         ],), ]),],style={'margin-top': '5px', 'margin-left': '5px','margin-right': '5px', 'margin-bottom': '5px'})]
         , fluid=True)

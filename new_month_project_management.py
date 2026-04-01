@@ -12,7 +12,7 @@ pattern_ref = '[0-9][0-9]-[0-9][0-9][0-9][0-9].A[0-9][0-9][0-9].[0-9][0-9][0-9]'
 dir_pilotage = '\\__ A2-GESTION DE PROJET\\A227-229 Suivi Projet\\'
 date = '2026-03-31'
 new_date = '2026-04-30'
-file_list = ["TBD", "Scope", "Schedule", "Cost", "Forecast", "Resource", "Procurement", "Stakeholders"]
+file_list = ["GP", "Scope", "Schedule", "Cost", "Forecast", "Resource", "Procurement", "Stakeholders"]
 old_file = {}
 new_file = {}
 
