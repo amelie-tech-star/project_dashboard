@@ -14,7 +14,7 @@ from model import management_files
 import numpy as np
 
 
-date = '2026-03-31'
+date = '2026-04-30'
 project_list = ['25-0030 - FLYCERA']
 project_dir = '\\\\dfs\\AIX\\KNS\\Doc_KN\\XXX affaires\\2025\\'
 
@@ -22,6 +22,9 @@ col_list = ['Actual Cost', 'Earned Value', 'Reste à Faire', 'Planned Value']
 col_list_short = ['AC', 'EV', 'RAF', 'PV']
 color_list = { 'AC' : 'orchid', 'RAF': 'gray', 'EV':'gold', 'PV' : 'lime', 'CAT' : 'blue', 'Objectif CAT' : 'cyan' }
 cat_titles = ['MANAGEMENT', 'SYSTEM', 'HARDWARE', 'FIRMWARE', 'SOFTWARE', 'MECHANICAL', 'CAO', 'Manufacturing', 'Procurement', 'Warranty/Risk', 'TOTAL']
+#cat_titles = ['MANAGEMENT', 'SYSTEM', 'MECHANICAL', 'HARDWARE', 'SOFTWARE', 'Manufacturing', 'Procurement', 'TOTAL']
+nb_cat_title = len(cat_titles)-1
+print(nb_cat_title)
 actuality = ['meeting', 'Main issues', 'Past activities', 'Future activities']
 baseline_chiffres = ['CA', 'CAT', 'PM', 'CAT NEW', 'PM NEW']
 template="plotly_dark"
@@ -89,7 +92,6 @@ for project in project_list:
                 print (f"{synth_chif_found_value} = {value}")
                 BASELINE_dataframe.loc[project,synth_chif_found_value] = value
 
-
     ########################
     # TBD SHEET PARSING    #
     ########################
@@ -107,26 +109,50 @@ for project in project_list:
 perf_fig = go.Figure()
 evm_fig  = go.Figure()
 
-perf_fig = make_subplots(rows=2, cols=5, shared_yaxes=True, subplot_titles=cat_titles[:10])
-evm_fig  = make_subplots(rows=1, cols=1, shared_yaxes=True, subplot_titles=cat_titles[10])
 
-for j in range (0, 11):
+nb_cols = 5
+nb_row = 2
+
+#nb_cols = 3
+#nb_row = 3
+
+perf_fig = make_subplots(rows=nb_row, cols=nb_cols, shared_yaxes=True, subplot_titles=cat_titles[:nb_cat_title])
+evm_fig  = make_subplots(rows=1, cols=1, shared_yaxes=True, subplot_titles=cat_titles[nb_cat_title-1])
+
+# For each title category 
+for j in range (0, nb_cat_title+1):
     perf_df=PERF_collection[project_list[0],cat_list[project_list[0]][j]]
     # Subplot organization
-    if j < 5:
+    if j < nb_cols:
         j_row=1
         j_col=j+1
-    elif j < 10:
+    elif j < nb_cols*2:
         j_row=2
-        j_col=j-4
-    else:
+        j_col=j+1 - nb_cols
+    elif j < nb_cols*3:
         j_row=3
-        j_col=j-7
+        j_col=j+1 - 2*nb_cols
+
+    # if j < nb_cols:
+        # j_row=1
+        # j_col=j+1
+        
+    print(f"j {j} j_row {j_row} j_col{j_col}")
+        
+    # elif j < nb_cols*2:
+        # j_row=2
+        # j_col=j- nb_cols - 1
+    # elif j < nb_cols*3:
+        # j_row=3
+        # j_col=j- nb_cols - 1
+
+
+
 
     # Select EVM figure for TOTAL
-    if j < 10:
+    if j < nb_cat_title:
         fig = perf_fig
-    elif j == 10:
+    elif j == nb_cat_title:
         fig = evm_fig
         j_row=1
         j_col=1
@@ -137,6 +163,7 @@ for j in range (0, 11):
         perf_y = perf_df[perf_df.columns[i]]
 
         if perf_df.columns[i] == 'AC' or perf_df.columns[i]=='RAF':
+            print(f"FOR AC RAF i {i} j {j} j_row {j_row} j_col{j_col}")
             fig.add_trace(
                 go.Bar(
                     x=perf_x,
@@ -146,7 +173,8 @@ for j in range (0, 11):
                     row=j_row,
                     col=j_col)
         else:
-             fig.add_trace(
+            print(f"ELSE i {i} j {j} j_row {j_row} j_col{j_col}")
+            fig.add_trace(
                 go.Scatter(
                     x=perf_x,
                     y=perf_y,
@@ -157,7 +185,7 @@ for j in range (0, 11):
                     col=j_col)
 
     # Add CAT curve for EVM graph
-    if j == 10:
+    if j == nb_cat_title:
         perf_x = perf_df[perf_df.columns[0]].index
         perf_y = np.empty(len(perf_x))
         perf_y.fill(BASELINE_dataframe.loc[project_list[0],'CAT'])
@@ -290,7 +318,7 @@ def update_ind_tbd(project_chosen):
     Input(component_id='project-item', component_property='value')
 )
 def update_href(project_chosen):
-    return FILE_dataframe.loc[project_chosen,'TBD'], FILE_dataframe.loc[project_chosen,'Cost'], FILE_dataframe.loc[project_chosen,'Forecast'], FILE_dataframe.loc[project_chosen,'Schedule']
+    return FILE_dataframe.loc[project_chosen].get('TBD',''), FILE_dataframe.loc[project_chosen].get('Cost',''), FILE_dataframe.loc[project_chosen].get('Forecast',''), FILE_dataframe.loc[project_chosen].get('Schedule')
 
 #################
 # BTN CALLBACK  #
@@ -349,12 +377,12 @@ def open_file_forecast(n_clicks, value):
 def update_evm(project_chosen):
     # Update every trace (EV, RAF, AC...)
     perf_proj_collection= {}
-    perf_proj_collection = PERF_collection[project_chosen,cat_list[project_chosen][10]]
+    perf_proj_collection = PERF_collection[project_chosen,cat_list[project_chosen][nb_cat_title]]
     for col in perf_df.columns:
         evm_fig.update_traces(
             x=perf_proj_collection.index,
             y=perf_proj_collection[col],
-            selector=dict(name=cat_titles[10] + ' ' + col))
+            selector=dict(name=cat_titles[nb_cat_title] + ' ' + col))
 
     # Update separatly CAT that is coming from BASELINE
     perf_y = np.empty(len(perf_x))
@@ -362,7 +390,7 @@ def update_evm(project_chosen):
     evm_fig.update_traces(
         x=perf_proj_collection.index,
         y=perf_y,
-        selector=dict(name=cat_titles[10] + ' CAT'))
+        selector=dict(name=cat_titles[nb_cat_title] + ' CAT'))
 
     return evm_fig
 
@@ -377,7 +405,7 @@ def update_perf(project_chosen):
     perf_y=[]
     perf_name = []
     perf_proj_collection= {}
-    for k in range (0, 10):
+    for k in range (0, nb_cat_title):
         perf_proj_collection[cat_list[project_chosen][k]] = PERF_collection[project_chosen,cat_list[project_chosen][k]]
         for col in perf_df.columns:
             perf_fig.update_traces(
@@ -403,10 +431,10 @@ app.layout = dbc.Container([dbc.Row([
         # DROPDOWN
         dbc.Row(dcc.Dropdown(options=project_list, value=project_list[0], id='project-item')),
         # LINKS
-        dbc.Row(dbc.Button("Dashboard", value=FILE_dataframe.loc[project, 'TBD'], id = 'Link_TBD')),
-        dbc.Row(dbc.Button("Costs", value=FILE_dataframe.loc[project, 'Cost'], id = 'Link_Cost')),
-        dbc.Row(dbc.Button("Forecast", value=FILE_dataframe.loc[project, 'Forecast'], id = 'Link_Forecast')),
-        dbc.Row(dbc.Button("Schedule", value=FILE_dataframe.loc[project, 'Schedule'], id = 'Link_Schedule')),
+        dbc.Row(dbc.Button("Dashboard", value=FILE_dataframe.loc[project].get('TBD',''), id = 'Link_TBD')),
+        dbc.Row(dbc.Button("Costs", value=FILE_dataframe.loc[project].get('Cost',''), id = 'Link_Cost')),
+        dbc.Row(dbc.Button("Forecast", value=FILE_dataframe.loc[project].get('Forecast',''), id = 'Link_Forecast')),
+        dbc.Row(dbc.Button("Schedule", value=FILE_dataframe.loc[project].get('Schedule',''), id = 'Link_Schedule')),
         html.Div(id='Open_TBD', style={'display':'none'}),
         html.Div(id='Open_Cost', style={'display':'none'}),
         html.Div(id='Open_Forecast', style={'display':'none'}),
