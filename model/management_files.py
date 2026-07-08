@@ -1,31 +1,43 @@
 import os
 import re
 import pandas as pd
+from pathlib import Path
 
-pattern_ref = '[0-9][0-9]-[0-9][0-9][0-9][0-9].A[0-9][0-9][0-9].[0-9][0-9][0-9].[A-Z][0-9]'
-dir_pilotage = '\\__ A2-GESTION DE PROJET\\A229-Suivi Projet\\'
-#dir_pilotage = '\\C4 Offres & Devis Commerciaux internes\\'
 
-def get_FILE_loc(project_dir, project, file_dir, identifiant, extension, date):
+def get_FILE_loc(project_dir, project, file_dir, identifiant, extension, pattern_ref, date):
     pattern_file = pattern_ref + "_" + identifiant + "_" + date + extension
+    
+    print("########## GET FILE LOCATION FOR: ##########")
     print(pattern_file)
-    project_dir_current = project_dir + project + dir_pilotage + file_dir
+    project_dir_current = project_dir + project + file_dir
+    
     print(project_dir_current)
+    
+    if Path(project_dir_current).exists() and Path(project_dir_current).is_dir():
+        print("Le répertoire existe.")
+    else:
+        print("Le répertoire n'existe pas.")
     
     found_file = None
     
     for root, dirs, files in os.walk(project_dir_current):
         for file_resource in files:
-            if re.search(pattern_file, file_resource):
+            result = re.search(pattern_file, file_resource)
+            if result:
                 found_file = file_resource
-                print(f"{identifiant}  = {file_resource}")
-                break
-        if found_file:
+                print(f"MATCH {identifiant}  = {file_resource}")
                 break
 
-    return project_dir_current + file_resource
+    returned_file = ""
+    if found_file != None:
+        print(f"Le fichier trouvé est {found_file}")
+        returned_file = project_dir_current + found_file
+    else:
+        print("Le fichier n'a pas été trouvé.")   
+        
+    return returned_file
 
-def get_FILE_dataframe(project_list, date, project_dir ):
+def get_FILE_dataframe(project_list, date, project_dir, dir_pilotage, pattern_ref):
 
     FILE_dataframe = pd.DataFrame()
     
@@ -34,41 +46,27 @@ def get_FILE_dataframe(project_list, date, project_dir ):
         #############
         # TBD       #
         #############
-        FILE_dataframe.loc[project, 'TBD'] = get_FILE_loc(project_dir, project, "4_Integration\\", "GP", ".xlsx", date)
+        FILE_dataframe.loc[project, 'TBD'] = get_FILE_loc(project_dir, project, dir_pilotage, "GP", ".xlsx", pattern_ref, date)
 
         ################
-        # WBS          #
+        # VISIO GP     #
         ################
-        FILE_dataframe.loc[project, 'Scope'] = get_FILE_loc(project_dir, project, "5_Scope\\", "WBS", ".vsdx", date)
+        FILE_dataframe.loc[project, 'GP'] = get_FILE_loc(project_dir, project, dir_pilotage, "GP", ".vsdx", pattern_ref, date)
 
         #############
         # SCHEDULE  #
         #############
-        FILE_dataframe.loc[project, 'Schedule'] = get_FILE_loc(project_dir, project, "6_Schedule\\", "Shedule", ".mpp", date)
+        FILE_dataframe.loc[project, 'Schedule'] = get_FILE_loc(project_dir, project, f"{dir_pilotage}6_Schedule\\", "Schedule", ".mpp", pattern_ref, date)
 
         #############
-        # FORECAST  #
+        # RESOURCE  #
         #############
-        #FILE_dataframe.loc[project, 'Forecast'] = get_FILE_loc(project_dir, project, "..\\A250-TDB\\", project, ".xlsx", date)
+        FILE_dataframe.loc[project, 'Resource'] = get_FILE_loc(project_dir, project, f"{dir_pilotage}\\..\\..\\____ R0-R9-REALISATION\\", "Fiche_demande_de_travaux", ".xlsx", pattern_ref, date)
 
         #############
         # EVM       #
         #############
-        FILE_dataframe.loc[project, 'Cost'] = get_FILE_loc(project_dir, project, "7_Cost\\", "Cost", ".xlsm", date)
+        FILE_dataframe.loc[project, 'Cost'] = get_FILE_loc(project_dir, project, f"{dir_pilotage}7_Cost\\", "Cost", ".xlsm", pattern_ref, date)
 
-        #############
-        # RESOURCES #
-        #############
-        FILE_dataframe.loc[project, 'Resource'] = get_FILE_loc(project_dir, project, "9_Resource\\", "OBS", ".vsdx", date)
-
-        ################
-        # PROCUREMENT  #
-        ################
-        FILE_dataframe.loc[project, 'Procurement'] = get_FILE_loc(project_dir, project, "12_Procurement\\", "Procurement", ".vsdx", date)
-
-        ################
-        # STAKEHOLDERS #
-        ################
-        FILE_dataframe.loc[project, 'Stakeholders'] = get_FILE_loc(project_dir, project, "13_Stakeholders\\", "Stakeholders", ".vsdx", date)
 
     return FILE_dataframe

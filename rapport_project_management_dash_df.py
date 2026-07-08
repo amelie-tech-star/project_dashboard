@@ -12,11 +12,27 @@ import math
 import plotly.graph_objects as go
 from model import management_files
 import numpy as np
+from configparser import ConfigParser
+import warnings
+
+# Filter warning while using pd.read_excel
+warnings.filterwarnings("ignore",  message="Unknown extension is not supported and will be removed")
+warnings.filterwarnings("ignore",  message="Conditional Formatting extension is not supported and will be removed")
+
+# Parse the config.ini file
+config = ConfigParser()
+config.read("config.ini")
+
+# Get configuration
+project_list = [p.strip() for p in config["General"]["project_list"].split(",")]
+project_dir = config["General"]["project_dir"]
+pattern_ref = config["General"]["pattern_ref"]
+dir_pilotage  = config["General"]["dir_pilotage"]
+date = config["General"]["new_date"]
 
 
-date = '2026-04-30'
-project_list = ['25-0030 - FLYCERA']
-project_dir = '\\\\dfs\\AIX\\KNS\\Doc_KN\\XXX affaires\\2025\\'
+#actuality = ['meeting', 'Main issues', 'Past activities', 'Future activities']
+actuality = ['réunion', 'Points durs', 'n-1', 'n+1']
 
 col_list = ['Actual Cost', 'Earned Value', 'Reste à Faire', 'Planned Value']
 col_list_short = ['AC', 'EV', 'RAF', 'PV']
@@ -25,7 +41,6 @@ cat_titles = ['MANAGEMENT', 'SYSTEM', 'HARDWARE', 'FIRMWARE', 'SOFTWARE', 'MECHA
 #cat_titles = ['MANAGEMENT', 'SYSTEM', 'MECHANICAL', 'HARDWARE', 'SOFTWARE', 'Manufacturing', 'Procurement', 'TOTAL']
 nb_cat_title = len(cat_titles)-1
 print(nb_cat_title)
-actuality = ['meeting', 'Main issues', 'Past activities', 'Future activities']
 baseline_chiffres = ['CA', 'CAT', 'PM', 'CAT NEW', 'PM NEW']
 template="plotly_dark"
 
@@ -35,10 +50,12 @@ TBD_avancement = pd.DataFrame()
 BASELINE_dataframe = pd.DataFrame()
 FILE_dataframe = pd.DataFrame()
 
-FILE_dataframe= management_files.get_FILE_dataframe(project_list, date, project_dir)
+FILE_dataframe= management_files.get_FILE_dataframe(project_list, date, project_dir, dir_pilotage, pattern_ref)
 
 for project in project_list:
 
+
+    print(f"########## PARSE FILE FOR {project} PROJECT ##########")
     ########################
     # PERF SHEET PARSING   #
     ########################
@@ -66,9 +83,8 @@ for project in project_list:
                             .replace("Reste à Faire", "RAF")])
             result=pd.concat([result, s1], axis=1)
         PERF_collection[project,cat]=pd.DataFrame(result, columns = col_list_short)
-
-
-
+    print(f"#### end of perf ######")
+    
     ########################
     # BASELINE PARSING     #
     ########################
@@ -92,6 +108,8 @@ for project in project_list:
                 print (f"{synth_chif_found_value} = {value}")
                 BASELINE_dataframe.loc[project,synth_chif_found_value] = value
 
+    print(f"##### end of baseline #####")
+    
     ########################
     # TBD SHEET PARSING    #
     ########################
@@ -101,14 +119,17 @@ for project in project_list:
         for j, value in row.items():
             for synth_avcmt in actuality:
                 if synth_avcmt in str(value):
+                    print(f"found {synth_avcmt}")
                     TBD_avancement.loc[project, synth_avcmt]=value
+                    
+    
+    print(f"########## END OF PARSING ##########")
 
 #######################
 # PERF AND EVM FIGURE #
 #######################
 perf_fig = go.Figure()
 evm_fig  = go.Figure()
-
 
 nb_cols = 5
 nb_row = 2
@@ -146,9 +167,6 @@ for j in range (0, nb_cat_title+1):
         # j_row=3
         # j_col=j- nb_cols - 1
 
-
-
-
     # Select EVM figure for TOTAL
     if j < nb_cat_title:
         fig = perf_fig
@@ -162,7 +180,8 @@ for j in range (0, nb_cat_title+1):
         perf_x = perf_df[perf_df.columns[i]].index
         perf_y = perf_df[perf_df.columns[i]]
 
-        if perf_df.columns[i] == 'AC' or perf_df.columns[i]=='RAF':
+        #if perf_df.columns[i] == 'AC' or perf_df.columns[i]=='RAF':
+        if perf_df.columns[i]=='RAF':
             print(f"FOR AC RAF i {i} j {j} j_row {j_row} j_col{j_col}")
             fig.add_trace(
                 go.Bar(
